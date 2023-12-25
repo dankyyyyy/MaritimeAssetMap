@@ -88,3 +88,37 @@ sw.*
 
 # Vim swap files
 *.swp
+
+# Python virtual environments
+venv/
+env/
+ENV/
+services/test_env/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Pytest cache
+.pytest_cache/
+
+# MyPy cache
+.mypy_cache/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# VS Code settings
+.vscode/
