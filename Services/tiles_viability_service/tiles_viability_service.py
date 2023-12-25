@@ -1,35 +1,33 @@
-import netCDF4 as nc
-import numpy as np
 import logging
+from .bathymetry_helper import BathymetryHelper
+from validation.water_depth_validation import WaterDepthValidator
 
 class TilesViabilityService:
-    DATASET_PATH = '../bathymetric data/gebco_denmark.nc'
-
     def __init__(self):
-        self.dataset = self.load_dataset(self.DATASET_PATH)
+        self.bathymetry_helper = BathymetryHelper()
+        self.water_depth_validator = WaterDepthValidator()
 
-    def load_dataset(self, dataset_path):
+    async def process_tile_viability(self, coordinates):
+        """
+        Processes tile viability based on the provided coordinates.
+
+        This method calculates the average depth at the provided coordinates using the
+        BathymetryHelper class and includes appropriate error handling and logging.
+
+        Parameters:
+            coordinates (list of tuple): A list of tuples representing latitude and longitude pairs.
+
+        Returns:
+            float: The average depth at the given coordinates. Returns None if an error occurs.
+        """
+        if not coordinates:
+            logging.error("No coordinates provided for tile viability processing.")
+            return None
+
         try:
-            dataset = nc.Dataset(dataset_path)
-            return dataset
+            average_depth = await self.bathymetry_helper.get_average_depth(coordinates)
+            logging.info(f"Average depth calculated: {average_depth}")
+            return average_depth
         except Exception as e:
-            logging.error(f"Error loading dataset: {str(e)}")
-            raise  # Reraise the exception
-
-    def find_nearest_index(self, values, target):
-        """Find the index of the nearest value in a list."""
-        return np.abs(values - target).argmin()
-
-    async def get_depth_at_coordinates(self, lat, lon):
-        try:
-            lat_idx = self.find_nearest_index(self.dataset.variables['lat'][:], lat)
-            lon_idx = self.find_nearest_index(self.dataset.variables['lon'][:], lon)
-            elevation = self.dataset.variables['elevation'][lat_idx, lon_idx]
-            depth = -elevation if elevation < 0 else 0  # Convert elevation to depth
-            return float(depth)  # Convert to standard Python float
-        except Exception as e:
-            logging.error(f"Error retrieving depth at coordinates ({lat}, {lon}): {str(e)}")
-            raise  # Reraise the exception
-
-# Configure logging to print to the console
-logging.basicConfig(level=logging.ERROR)
+            logging.error(f"Error occurred during tile viability processing: {e}", exc_info=True)
+            return None

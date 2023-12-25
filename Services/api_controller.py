@@ -1,24 +1,32 @@
-from flask import Blueprint, jsonify, request
-from tiles_viability_service.bathymetry_helper import BathymetryHelper
-from validation.water_depth_validation import WaterDepthValidator
 import logging
+
+from flask import Blueprint, jsonify, request
+
+from validation.water_depth_validation import WaterDepthValidator
+from tiles_viability_service.tiles_viability_service import TilesViabilityService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 api_blueprint = Blueprint('api', __name__)
-bathymetry_helper = BathymetryHelper()
-water_depth_validator = WaterDepthValidator(bathymetry_helper)
+tilesService = TilesViabilityService()
+validator = WaterDepthValidator()
 
 @api_blueprint.route('/water-depth', methods=['GET'])
 async def get_water_depth():
-    lat = request.args.get('lat', type=float)
-    lon = request.args.get('lon', type=float)
+    coords = request.args.getlist('coords')
+    coordinates = [(float(lat), float(lon)) for coord in coords for lat, lon in [coord.split(',')]]
 
-    logging.info(f"Received GET lat: {lat}, lot: {lon}")
+    if not validator.validate_coordinate_count(coordinates):
+        return jsonify({"error": "Incorrect number of coordinate pairs provided"}), 400
 
-    result, status_code = await water_depth_validator.validate_and_get_depth(lat, lon)
+    if not validator.validate_coordinates(coordinates):
+        return jsonify({"error": "Invalid coordinate pairs provided"}), 400
 
-    logging.info(f"Responding with status: {status_code}, data: {result}")
-
-    return jsonify(result), status_code
+    try:
+        average_depth = await tilesService.process_tile_viability(coordinates)
+        logging.info(f"Average depth calculated: {average_depth}")
+        return jsonify({"average_depth": average_depth}), 200
+    except Exception as e:
+        logging.error(f"Error calculating average depth: {e}")
+        return jsonify({"error": "Error processing request"}), 500

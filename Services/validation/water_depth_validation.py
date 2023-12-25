@@ -1,10 +1,30 @@
+from tiles_viability_service.bathymetry_helper import BathymetryHelper
+from .validation_constants import ValidationConstants
+import logging
+
 class WaterDepthValidator:
-    def __init__(self, bathymetry_helper):
-        self.bathymetry_helper = bathymetry_helper
+    '''provides validation for input'''
+    def __init__(self):
+        self.bathymetry_helper = BathymetryHelper()
 
-    async def validate_and_get_depth(self, lat, lon):
-        if lat is None or lon is None:
-            return {"error": "Missing latitude or longitude parameter"}, 400
+    def validate_coordinates(self, coordinates):
+        '''checks against min and max values for mercator projection maps'''
+        for lat, lon in coordinates:
+            if not (ValidationConstants.MIN_LATITUDE <= lat <= ValidationConstants.MAX_LATITUDE and ValidationConstants.MIN_LONGITUDE <= lon <= ValidationConstants.MAX_LONGITUDE):
+                logging.error(f"Invalid coordinate: Latitude {lat}, Longitude {lon}")
+                return False
+        return True
+    
+    def validate_coordinate_count(self, coordinates):
+        """
+        Validates if the correct number of coordinate pairs is provided.
 
-        depth = await self.bathymetry_helper.get_depth_at_coordinates(lat, lon)
-        return {"latitude": lat, "longitude": lon, "depth": depth}, 200
+        A tile should have exactly four pairs of latitude and longitude,
+        representing its four edges.
+        """
+        
+        if len(coordinates) == 4:
+            return True
+        else:
+            logging.error(f"Incorrect number of coordinate pairs provided. Expected 4, got {len(coordinates)}")
+            return False

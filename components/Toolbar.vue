@@ -12,18 +12,17 @@
     name: 'Toolbar',
     methods: {
       ...mapActions(['fetchTileInfo']),
-  
+
       fetchData() {
         const coordinates = JSON.parse(Cookies.get('coordinates') || '[]');
-        coordinates.forEach(({ latitude, longitude }) => {
-          this.fetchTileInfo({ latitude, longitude });
-        });
+        this.fetchTileInfo(coordinates);
       }
+
     }
   };
   </script>
   
-  <style scoped>
+<style scoped>
   .toolbar {
     display: flex;
     justify-content: flex-end;
